@@ -7,15 +7,15 @@
 
 use sqlx::PgPool;
 
-use crate::amqp::AmqpPublisher;
 use crate::config::PostgresConfig;
 use crate::db::{self, AviseRow};
 use crate::envelope::AviseData;
 use crate::error::AppResult;
+use crate::nats::NatsPublisher;
 
 pub async fn run_once(
     pg: &PgPool,
-    amqp: &AmqpPublisher,
+    nats: &NatsPublisher,
     pg_cfg: &PostgresConfig,
 ) -> AppResult<usize> {
     let rows = db::fetch_new_avise(pg, pg_cfg).await?;
@@ -34,7 +34,7 @@ pub async fn run_once(
         let gebinde_typ_prefill = db::prefill_gebinde_typ(row.strmengeneinheit.as_deref());
         let data = to_avise_data(&row, &info, gebinde_typ_prefill);
 
-        match amqp.publish_avise(data).await {
+        match nats.publish_avise(data).await {
             Ok(event_id) => {
                 tracing::info!(
                     event_id = %event_id,

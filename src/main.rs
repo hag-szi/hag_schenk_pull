@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use clap::Parser;
 
-mod amqp;
 mod config;
 mod db;
 mod envelope;
 mod error;
 mod logging;
+mod nats;
 mod pull;
 
 use config::Config;
@@ -49,10 +49,10 @@ async fn main() -> AppResult<()> {
     }
 
     let pg = db::connect(&cfg.postgres).await?;
-    let amqp = amqp::AmqpPublisher::connect_with_retry(cfg.amqp.clone()).await?;
+    let nats = nats::NatsPublisher::connect_with_retry(cfg.nats.clone()).await?;
 
     if cli.once {
-        let n = pull::run_once(&pg, &amqp, &cfg.postgres).await?;
+        let n = pull::run_once(&pg, &nats, &cfg.postgres).await?;
         tracing::info!(published = n, "einmaliger Lauf fertig");
         return Ok(());
     }
@@ -60,8 +60,8 @@ async fn main() -> AppResult<()> {
     let interval = Duration::from_secs(cfg.pull.interval_seconds);
     tracing::info!(
         interval_secs = cfg.pull.interval_seconds,
-        exchange = %cfg.amqp.outbound_exchange,
-        routing_key = %cfg.amqp.outbound_routing_key,
+        nats_url = %cfg.nats.url,
+        env = %cfg.nats.env,
         "hag-schenk-pull läuft"
     );
 
@@ -74,7 +74,7 @@ async fn main() -> AppResult<()> {
                 return Ok(());
             }
             _ = async {
-                match pull::run_once(&pg, &amqp, &cfg.postgres).await {
+                match pull::run_once(&pg, &nats, &cfg.postgres).await {
                     Ok(n) if n > 0 => tracing::info!(published = n, "batch fertig"),
                     Ok(_) => {},
                     Err(e) => tracing::warn!(error = %e, "pull-iteration fehlgeschlagen, weiter beim nächsten intervall"),

@@ -3,7 +3,7 @@ name = "hag-schenk-pull"
 version = "0.1.0"
 edition = "2021"
 authors = ["IT Hartmann <it@hartmannag.de>"]
-description = "Pollt die Legacy-Postgres auf neue Schenk-Avise und publisht sie als warehouse.schenk.avise-received an den HAG-Connect-Bus."
+description = "Pollt die Legacy-Postgres auf neue Schenk-Avise und publisht sie als hag.events.schenk.lager.avise.received an den HAG-Connect-NATS-Bus."
 
 [[bin]]
 name = "hag-schenk-pull"
@@ -21,10 +21,10 @@ sqlx = { version = "0.8", default-features = false, features = [
     "macros",
 ] }
 
-# AMQP
-lapin = "2.5"
-tokio-executor-trait = "2"
-tokio-reactor-trait = "1"
+# NATS (mit JetStream-Publish, Server-seitiges Dedup via Nats-Msg-Id)
+async-nats = "0.42"
+bytes = "1"
+futures = "0.3"
 
 # Serde + JSON
 serde = { version = "1", features = ["derive"] }

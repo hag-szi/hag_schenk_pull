@@ -1,6 +1,6 @@
 //! Event-Envelope + Payload. Spiegel der Pydantic-Contracts aus
-//! `HAG Connect Platform/contracts/schemas/events/warehouse-schenk-avise-received.yaml`
-//! (v0.7.0).
+//! `HAG Connect Platform/contracts/schemas/events/schenk-lager-avise-received.yaml`
+//! (v1.0.1, v2-Subject-Taxonomy).
 
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -49,8 +49,8 @@ impl<T> Envelope<T> {
     }
 }
 
-/// Payload für `warehouse.schenk.avise-received`. Feld-für-Feld analog
-/// zur Pydantic-Definition.
+/// Payload für `hag.events.schenk.lager.avise.received`. Feld-für-Feld
+/// analog zur Pydantic-Definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AviseData {
     pub bestellnr: String,
@@ -108,14 +108,14 @@ mod tests {
             gebinde_typ_prefill: Some("FLA".into()),
         };
         let env = Envelope::wrap(
-            "warehouse.schenk.avise-received",
-            "0.1.0",
-            "schenk-pull",
+            "hag.events.schenk.lager.avise.received",
+            "1.0.1",
+            "hag-schenk-pull",
             "SCHENK",
             data,
         );
         let json = serde_json::to_string(&env).unwrap();
-        assert!(json.contains("\"event_name\":\"warehouse.schenk.avise-received\""));
+        assert!(json.contains("\"event_name\":\"hag.events.schenk.lager.avise.received\""));
         assert!(!json.contains("attachments"));
         assert!(!json.contains("causation_id"));
         let back: Envelope<AviseData> = serde_json::from_str(&json).unwrap();

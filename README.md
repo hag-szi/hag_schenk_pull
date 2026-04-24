@@ -3,7 +3,7 @@
 Long-running Rust-Service, der die Legacy-Postgres (`io_oxaion.i_weavise`)
 in einer konfigurierbaren Taktung auf neue Schenk-Avise pollt, die
 Zeilen mit Stammdaten aus `m.artikelbasis` anreichert und sie als
-`warehouse.schenk.avise-received`-Events an den HAG-Connect-Bus
+`hag.events.schenk.lager.avise.received`-Events an den HAG-Connect-Bus
 publisht.
 
 Ersetzt den früheren, in `schenk_we_export` eingebauten Pull-Pfad —
@@ -15,10 +15,12 @@ Web-Service konsumiert das publizierte Event.
 ```
                                    ┌───────────────────────┐
                                    │  HAG Connect Bus      │
-                                   │  hag.events exchange  │
+                                   │  NATS JetStream       │
+                                   │  hag-events stream    │
                                    └──────────▲────────────┘
                                               │
-                          warehouse.schenk.avise-received
+                          hag.<env>.events.schenk.lager.avise.received
+                                  (JetStream-Publish + Dedup-Header)
                                               │
                                    ┌───────────────────────┐
                                    │ hag-schenk-pull       │
@@ -51,8 +53,10 @@ Pro Iteration:
    `nummengeimlademittel × lngbuendelung`, `lngbuendelung`)
    und `prefill_gebinde_typ` aus der Mengeneinheit (FL → FLA,
    KT → KAR).
-3. **Publish**: für jede Zeile ein `warehouse.schenk.avise-received`-
-   Event an `hag.events`. Persistent, content-type `application/json`.
+3. **Publish**: für jede Zeile ein
+   `hag.events.schenk.lager.avise.received`-Event über JetStream
+   (`hag-events`-Stream). `Nats-Msg-Id` = event_id sorgt für
+   Server-seitiges Dedup im Stream-Window.
 4. **Mark**: `UPDATE io_oxaion.i_weavise SET strlocked='N'` für alle
    erfolgreich publizierten Avise. Dadurch tauchen sie im nächsten
    Pull nicht wieder auf.
@@ -67,7 +71,7 @@ Consumer auf der anderen Seite ist idempotent
 ## Tech-Stack
 
 - Rust 1.95.0 (pinned via `rust-toolchain.toml`)
-- `tokio` (full) + `lapin` 2.5 + `sqlx` 0.8 (Postgres)
+- `tokio` (full) + `async-nats` 0.42 (JetStream) + `sqlx` 0.8 (Postgres)
 - `figment` (TOML + Env), `clap`, `tracing` (JSON, daily rollend)
 
 ## Getting Started
@@ -76,11 +80,13 @@ Consumer auf der anderen Seite ist idempotent
 
 - Zugang zur Legacy-Postgres (über SSH-Tunnel, wie bei den anderen
   Hartmann-Services).
-- Zugang zur RabbitMQ-Instanz der HAG-Connect-Plattform;
-  Service-User `svc-schenk-pull` + Passwort kommen aus
+- Zugang zum NATS-Server der HAG-Connect-Plattform
+  (dev: `nats://192.168.4.128:4222`); Service-User
+  `svc-hag-schenk-pull-<env>` + Passwort kommen aus
   [`declare_users.py`](https://gitlab.hartmannag.de/it-hartmann/hag-connect-platform).
-- Topologie muss **vorher** per `declare_topology.py` provisioniert
-  sein (der Publisher deklariert keine Exchanges/Queues).
+- Stream `hag-events-<env>` muss **vorher** per
+  `declare_topology.py --apply` provisioniert sein — der Publisher
+  deklariert keine Streams.
 
 ### Konfiguration
 
@@ -138,8 +144,8 @@ cargo test --release
 ## Related
 
 - **[HAG Connect Platform](https://gitlab.hartmannag.de/it-hartmann/hag-connect-platform)** —
-  Event-Contract `warehouse.schenk.avise-received` unter
-  `contracts/schemas/events/warehouse-schenk-avise-received.yaml`.
+  Event-Contract `hag.events.schenk.lager.avise.received` unter
+  `contracts/schemas/events/schenk-lager-avise-received.yaml` (v1.0.1).
 - **[Schenk WE Export](https://gitlab.hartmannag.de/it-hartmann/schenk_we_export)** —
   konsumiert das Event; der alte eingebaute Pull-Pfad dort ist
   weggefallen, seit dieser Publisher übernommen hat.

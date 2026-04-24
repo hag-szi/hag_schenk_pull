@@ -9,7 +9,7 @@ use crate::error::{AppError, AppResult};
 pub struct Config {
     pub logging: LoggingConfig,
     pub postgres: PostgresConfig,
-    pub amqp: AmqpConfig,
+    pub nats: NatsConfig,
     pub pull: PullConfig,
 }
 
@@ -31,12 +31,19 @@ pub struct PostgresConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct AmqpConfig {
-    /// AMQP-URI inkl. Credentials + Vhost. Credentials besser per
-    /// Env-Variable (`HAG_SCHENK_PULL__AMQP__URL`).
+pub struct NatsConfig {
+    /// NATS-Server-URL, z.B. `nats://192.168.4.128:4222`. Credentials
+    /// kommen besser per `HAG_SCHENK_PULL__NATS__USERNAME` /
+    /// `HAG_SCHENK_PULL__NATS__PASSWORD` aus dem Env.
     pub url: String,
-    pub outbound_exchange: String,
-    pub outbound_routing_key: String,
+    #[serde(default)]
+    pub username: Option<String>,
+    #[serde(default)]
+    pub password: Option<String>,
+    /// Env-Token (`dev`/`test`/`prod`), der als zweites
+    /// Subject-Segment eingefügt wird — siehe `nats::env_scope_subject`.
+    /// Match zu `subject_suffix_for(env)` im Plattform-`declare_topology.py`.
+    pub env: String,
     /// Wird als `producer` im Event-Envelope eingetragen.
     pub producer_name: String,
     /// Wird als `customer_key` im Event-Envelope eingetragen.
