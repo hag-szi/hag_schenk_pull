@@ -1,0 +1,35 @@
+# Sample-Konfig für hag-schenk-pull.
+# Kopiere nach `config/config.toml` und trage die Credentials ein;
+# die echte config.toml steht in .gitignore.
+#
+# Sensible Werte gehen besser per Env-Variable — figment zieht
+# `HAG_SCHENK_PULL__`-präfixierte Vars mit `__` als Sektions-
+# Separator, z.B.
+#   HAG_SCHENK_PULL__POSTGRES__URL=postgres://...
+#   HAG_SCHENK_PULL__AMQP__URL=amqp://svc-schenk-pull-prod:...@broker/%2F
+
+[logging]
+dir   = "logs"
+level = "info"
+
+[postgres]
+# Zugang läuft in Prod über einen systemd-verwalteten autossh-Tunnel;
+# die URL zeigt deshalb auf den Loopback-Port.
+url        = "postgres://DB_USER:DB_PASSWORD@127.0.0.1:5433/DB_NAME?sslmode=disable"
+lngroot_id = 999
+lngprod_id = 520
+# Wenn true: keine `UPDATE strlocked='N'`-Writes. Nur Dev; Publisher
+# wird dieselben Avise endlos erneut senden (Consumer ist idempotent).
+read_only  = true
+
+[amqp]
+url                  = "amqp://svc-schenk-pull-dev:CHANGEME@localhost:5672/%2F"
+outbound_exchange    = "hag.events"
+outbound_routing_key = "warehouse.schenk.avise-received"
+producer_name        = "schenk-pull"
+customer_key         = "SCHENK"
+
+[pull]
+# Sekunden zwischen zwei Pulls. 60 entspricht der alten Lobster-
+# Taktung im abgelösten schenk_we_export.
+interval_seconds = 60

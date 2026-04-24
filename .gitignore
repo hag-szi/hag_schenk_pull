@@ -1,0 +1,17 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# OS junk
+.DS_Store
+
+# Runtime artefacts
+/data
+/logs
+
+# Secrets — config.toml ist nur lokal, Repo trägt nur *.sample.toml
+/config/config.toml
+/.env
+/.env.*
+!/.env.example
