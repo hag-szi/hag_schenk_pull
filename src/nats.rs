@@ -1,6 +1,6 @@
 //! NATS JetStream Publisher. Wir publishen nur, kein Consumer.
 //!
-//! Subject ist fix `hag.events.schenk.lager.avise.received` (v2-
+//! Subject ist fix `hag.events.schenk.avise.received` (v2-
 //! Taxonomy aus dem HAG-Connect-Contracts-Repo). Der env-Token wird
 //! als zweites Subject-Segment eingefügt — `hag.<env>.events.…` —
 //! das spiegelt die heutige Stream-Capture-Regel im
@@ -21,7 +21,7 @@ use crate::config::NatsConfig;
 use crate::envelope::{AviseData, Envelope};
 use crate::error::{AppError, AppResult};
 
-const EVENT_NAME: &str = "hag.events.schenk.lager.avise.received";
+const EVENT_NAME: &str = "hag.events.schenk.avise.received";
 const EVENT_VERSION: &str = "1.0.1";
 
 pub struct NatsPublisher {
@@ -71,7 +71,7 @@ impl NatsPublisher {
     }
 
     /// Publisht eine einzelne Avis-Zeile als
-    /// `hag.events.schenk.lager.avise.received`. Wartet auf den
+    /// `hag.events.schenk.avise.received`. Wartet auf den
     /// JetStream-Publish-Ack — bei Fehler gibt der Caller die Zeile
     /// nicht in `mark_pulled` weiter und versucht beim nächsten Pull
     /// erneut.
@@ -113,8 +113,8 @@ impl NatsPublisher {
 }
 
 /// Fügt den Env-Token als zweites Subject-Segment ein:
-/// `hag.events.schenk.lager.avise.received` + env=`dev`
-/// → `hag.dev.events.schenk.lager.avise.received`.
+/// `hag.events.schenk.avise.received` + env=`dev`
+/// → `hag.dev.events.schenk.avise.received`.
 /// Spiegel der `subject_suffix_for(env)`-Logik im Plattform-Repo.
 fn env_scope_subject(base: &str, env: &str) -> String {
     let (head, rest) = base.split_once('.').unwrap_or((base, ""));
@@ -131,16 +131,16 @@ mod tests {
     #[test]
     fn env_scope_dev() {
         assert_eq!(
-            env_scope_subject("hag.events.schenk.lager.avise.received", "dev"),
-            "hag.dev.events.schenk.lager.avise.received"
+            env_scope_subject("hag.events.schenk.avise.received", "dev"),
+            "hag.dev.events.schenk.avise.received"
         );
     }
 
     #[test]
     fn env_scope_prod() {
         assert_eq!(
-            env_scope_subject("hag.events.schenk.lager.avise.received", "prod"),
-            "hag.prod.events.schenk.lager.avise.received"
+            env_scope_subject("hag.events.schenk.avise.received", "prod"),
+            "hag.prod.events.schenk.avise.received"
         );
     }
 }

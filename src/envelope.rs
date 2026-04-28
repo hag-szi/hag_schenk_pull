@@ -49,7 +49,7 @@ impl<T> Envelope<T> {
     }
 }
 
-/// Payload für `hag.events.schenk.lager.avise.received`. Feld-für-Feld
+/// Payload für `hag.events.schenk.avise.received`. Feld-für-Feld
 /// analog zur Pydantic-Definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AviseData {
@@ -108,14 +108,14 @@ mod tests {
             gebinde_typ_prefill: Some("FLA".into()),
         };
         let env = Envelope::wrap(
-            "hag.events.schenk.lager.avise.received",
+            "hag.events.schenk.avise.received",
             "1.0.1",
             "hag-schenk-pull",
             "SCHENK",
             data,
         );
         let json = serde_json::to_string(&env).unwrap();
-        assert!(json.contains("\"event_name\":\"hag.events.schenk.lager.avise.received\""));
+        assert!(json.contains("\"event_name\":\"hag.events.schenk.avise.received\""));
         assert!(!json.contains("attachments"));
         assert!(!json.contains("causation_id"));
         let back: Envelope<AviseData> = serde_json::from_str(&json).unwrap();
